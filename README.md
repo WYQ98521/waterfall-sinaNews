@@ -1,5 +1,5 @@
 #  新浪新闻
-## 预览地址：
+## 预览地址：https://wyq98521.github.io/waterfall-sinanews/index.html
 ###  懒加载原理
 ```function isShow($node){
 	var Scrolltop = $(window).scrollTop()
