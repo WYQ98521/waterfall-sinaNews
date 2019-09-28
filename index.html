@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <title>瀑布流新闻</title>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <style>
+        	html,body,ul,li,p,div{
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+	}
+	ul,li{
+		list-style: none;
+	}
+
+  .wrap{
+  	width: 900px;
+		margin: 0 auto;
+  }
+
+	.clearfix:after{
+		content: '';
+		display: block;
+		clear: both;
+	}
+	#pic-ct{
+		position: relative;
+	}
+	#pic-ct .item{
+		position: absolute;
+		padding: 0 0 10px 0;
+		width: 280px;
+		margin: 10px;
+		border: 1px solid #DFDFDF;
+		background: #FFF;
+		opacity: 0;
+		transition: all .8s;
+	}
+	#pic-ct .item img{
+	    margin: 10px;
+	    width: 260px;
+	}
+	#pic-ct .item .header{
+    margin: 0 12px;
+	}
+	#pic-ct .desp{
+		font-size: 12px;
+		line-height: 1.8;
+	  margin: 10px 15px 0;
+	  color: #777371;
+	}
+	#load{
+		visibility: hidden;
+		height: 20px;
+	}
+	.hide{
+		display: none;
+	}
+
+
+
+    </style>
+</head>
+<body>
+        <div class="wrap">
+                <div class="ct-waterfall">
+                    <ul id="pic-ct" class="clearfix">
+                        <!-- <li class="item">
+                            <a href="#" class="link">
+                                <img src="http://s.img.mix.sina.com.cn/auto/resize?img=http%3A%2F%2Fwww.sinaimg.cn%2Fdy%2Fslidenews%2F5_img%2F2016_09%2F453_75615_657883.jpg&size=250_0" alt="">
+						    </a>
+                            <h4 class="header">标题</h4>
+							<p class="desp">
+                                当地时间2016年3月1日，在东部与亲俄武装作战中受伤的乌克兰士兵接受海豚治疗。
+							</p>			
+                        </li> -->
+            
+                            <!-- 用于计算 item 宽度和列数，但不展示出来 -->
+                            <li class="item hide"></li>
+                    </ul>
+                    <div id="load">我是看不见的</div>
+                </div>
+                </div>
+</body>
+<script>
+
+var curPage = 1
+var perPageCount = 10
+var colSumHeight = []
+var nodeWidth = $('.item').outerWidth(true)
+var colNum = parseInt($('#pic-ct').width()/nodeWidth)
+var $target = $('#load')
+for(var i = 0; i < colNum; i++){
+	colSumHeight[i] = 0
+}
+
+start()
+
+
+$(window).on('scroll',function(){
+	
+	checkShow()
+})
+
+function checkShow(){
+	if(isShow($target))
+	dosth()
+}
+
+function isShow($node){
+	var Scrolltop = $(window).scrollTop()
+	var Height = $(window).height()
+　　var elementH =　$node.offset().top
+
+if(elementH < Scrolltop + Height){
+	return true
+}
+else {
+	return false
+}
+}
+
+
+function start(){
+	$.ajax({
+			url: 'https://photo.sina.cn/aj/v2/index?cate=military',
+			dataType: 'jsonp',   
+			jsonp:"callback",
+			data: {
+				pagesize: perPageCount,
+				page: curPage
+			}
+		}).done(function(ret){
+			if(ret && ret.code == 1 ){
+                //如果数据没问题，那么生成节点并摆放好位置
+				$.each(ret.data,function(index,news){
+					console.log(news)
+					var $node = getNode(news)
+					$node.find('img').on('load',function(){
+			     	$('#pic-ct').append($node)
+				    console.log($node, 'loaded...')
+					waterFallPlace($node)
+			})
+				})
+				curPage++
+			}else{
+				console.log('get error data');
+			}
+		});
+}
+
+function dosth(){
+	$.ajax({
+			url: 'https://photo.sina.cn/aj/v2/index?cate=military',
+			dataType: 'jsonp',   
+			jsonp:"callback",
+			data: {
+				pagesize: perPageCount,
+				page: curPage
+			}
+		}).done(function(ret){
+			if(ret && ret.code == 1 ){
+                //如果数据没问题，那么生成节点并摆放好位置
+				$.each(ret.data,function(index,news){
+					console.log(news)
+					var $node = getNode(news)
+					$node.find('img').on('load',function(){
+			     	$('#pic-ct').append($node)
+				    console.log($node, 'loaded...')
+					waterFallPlace($node)
+			})
+				})
+				curPage++
+			}else{
+				console.log('get error data');
+			}
+		});
+}
+
+function getNode(item){
+	var tpl = ''
+		tpl += '<li class="item">';
+		tpl += ' <a href="'+ item.url +'" class="link"><img src="' + item.thumb + '" alt=""></a>';
+		tpl += ' <h4 class="header">'+ item.stitle +'</h4>';
+		tpl += '<p class="desp">' + item.title +'</p>';
+		
+		tpl += '</li>';
+	
+	return $(tpl)
+}
+
+function waterFallPlace($node){
+
+var idx = 0,
+minSumHeight = colSumHeight[0];
+
+for(var i=0;i<colSumHeight.length; i++){
+	if(colSumHeight[i] < minSumHeight){
+		idx = i;
+		minSumHeight = colSumHeight[i];
+	}
+}
+
+$node.css({
+	left: nodeWidth*idx,
+	top: minSumHeight,
+	opacity: 1
+});
+
+colSumHeight[idx] = $node.outerHeight(true) + colSumHeight[idx];
+console.log(colSumHeight)
+$('#pic-ct').height(Math.max.apply(null,colSumHeight));
+
+}
+
+
+
+</script>
+</html>
